@@ -14,22 +14,28 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>>{
     Ok(())
 }
 
-pub struct Config<'a> {
-    pub path: &'a str,
-    pub query: &'a str,
+pub struct Config {
+    pub path: String,
+    pub query: String,
     pub case_sensitive: bool,
 }
 
-impl<'a> Config<'a> {
-    pub fn new(arg: &Vec<String>) -> Result<Config, &str> {
-        if arg.len() < 3 {
-            return Err("Not enough arguments...");
-        }
+impl Config {
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        args.next();
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("No query parameter..."),
+        };
+        let path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("No path parameter..."),
+        };
         let case_sensitive: bool = env::var("IGNORE_CASE").is_ok();
         Ok(
             Config {
-                query: &arg[1],
-                path: &arg[2],
+                query,
+                path,
                 case_sensitive,
             }
         )
@@ -37,23 +43,11 @@ impl<'a> Config<'a> {
 }
 
 pub fn search<'a>(query: &'a str, text: &'a str) -> Vec<&'a str>{
-    let mut lines: Vec<&str> = Vec::new();
-    for line in text.lines() {
-        if line.contains(query) {
-            lines.push(line);
-        }
-    }
-    lines
+    text.lines().filter(|line| line.contains(query)).collect()
 }
 
 pub fn case_insensitive_search<'a>(query: &'a str, text: &'a str) -> Vec<&'a str> {
-    let mut lines: Vec<&str> = Vec::new();
-    for line in text.lines() {
-        if line.to_lowercase().contains(&query.to_lowercase()) {
-            lines.push(line);
-        }
-    }
-    lines
+    text.lines().filter(|line| line.to_lowercase().contains(&query.to_lowercase())).collect()
 }
 
 #[cfg(test)]
